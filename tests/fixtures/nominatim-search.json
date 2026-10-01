@@ -1,0 +1,30 @@
+[
+  {
+    "place_id": 269757645,
+    "osm_type": "way",
+    "osm_id": 624302102,
+    "lat": "34.3938852",
+    "lon": "131.4010588",
+    "category": "building",
+    "type": "train_station",
+    "name": "萩駅",
+    "display_name": "萩駅, 萩三隅線, 椿, 萩市, 山口県, 758-0062, 日本"
+  },
+  {
+    "place_id": 1,
+    "osm_type": "node",
+    "osm_id": 2,
+    "lat": "34.4127",
+    "lon": "131.4153",
+    "category": "railway",
+    "type": "station",
+    "name": "東萩駅",
+    "display_name": "東萩駅, 萩市, 山口県, 日本"
+  },
+  {
+    "place_id": 3,
+    "lat": "not-a-number",
+    "lon": "131.4",
+    "display_name": "座標が不正な候補"
+  }
+]

@@ -1,0 +1,89 @@
+@import 'tailwindcss';
+
+/*
+ * デザイントークン。色の値はこのファイルだけで管理する（docs/development-guidelines.md 3.2 節）。
+ * static を付け、地図のマーカーなど Tailwind のクラスを使わない箇所からも CSS 変数として参照できるようにする
+ */
+@theme static {
+  --color-primary: #1d4ed8;
+  --color-primary-foreground: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-foreground: #0f172a;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-danger: #dc2626;
+  --color-favorite: #f59e0b;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--color-foreground);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* ---- Leaflet の上書き ---- */
+
+.leaflet-container {
+  font-family: inherit;
+  background: var(--color-surface-muted);
+}
+
+/* 帰属表示は検索バーの下に常に表示する（下部はボトムシートで隠れるため） */
+.leaflet-top.leaflet-right {
+  top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+}
+
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+
+.pf-parking-marker {
+  fill: var(--color-surface);
+  fill-opacity: 1;
+  stroke: var(--color-primary);
+  stroke-width: 3;
+}
+
+.pf-parking-marker.is-selected {
+  fill: var(--color-primary);
+  stroke: var(--color-surface);
+}
+
+.pf-search-radius {
+  fill: var(--color-primary);
+  fill-opacity: 0.06;
+  stroke: var(--color-primary);
+  stroke-opacity: 0.6;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 6;
+}
+
+.pf-user-location {
+  fill: #2563eb;
+  fill-opacity: 1;
+  stroke: #ffffff;
+  stroke-width: 3;
+}
+
+.pf-center-icon {
+  background: none;
+  border: none;
+}
+
+.pf-center-icon path {
+  fill: var(--color-danger);
+  stroke: #ffffff;
+  stroke-width: 1.5;
+}
+
+.pf-center-icon circle {
+  fill: #ffffff;
+}

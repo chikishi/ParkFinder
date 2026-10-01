@@ -1,0 +1,62 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API (test fixture)",
+  "elements": [
+    {
+      "type": "way",
+      "id": 1001,
+      "center": { "lat": 34.39575, "lon": 131.40106 },
+      "tags": {
+        "amenity": "parking",
+        "name": "萩駅前パーキング",
+        "parking": "surface",
+        "fee": "yes",
+        "capacity": "24",
+        "operator": "テスト駐車場株式会社",
+        "opening_hours": "24/7"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1002,
+      "lat": 34.39299,
+      "lon": 131.40106,
+      "tags": {
+        "amenity": "parking",
+        "name": "椿立体駐車場",
+        "parking": "multi-storey",
+        "fee": "no",
+        "capacity": "120"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1003,
+      "center": { "lat": 34.39479, "lon": 131.40216 },
+      "tags": {
+        "amenity": "parking"
+      }
+    },
+    {
+      "type": "way",
+      "id": 1004,
+      "center": { "lat": 34.39398, "lon": 131.40156 },
+      "tags": {
+        "amenity": "parking",
+        "name": "社員専用駐車場",
+        "access": "private"
+      }
+    },
+    {
+      "type": "relation",
+      "id": 1005,
+      "center": { "lat": 34.39749, "lon": 131.39926 },
+      "tags": {
+        "amenity": "parking",
+        "name": "市営地下駐車場",
+        "parking": "underground",
+        "fee": "Mo-Fr 08:00-18:00 yes"
+      }
+    }
+  ]
+}

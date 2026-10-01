@@ -1,0 +1,19 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API (test fixture)",
+  "elements": [
+    {
+      "type": "node",
+      "id": 2001,
+      "lat": 34.394,
+      "lon": 131.401,
+      "tags": { "amenity": "parking", "name": "正常な駐車場" }
+    },
+    { "type": "way", "id": 2002, "tags": { "amenity": "parking", "name": "中心座標が無い" } },
+    { "type": "area", "id": 2003, "lat": 34.394, "lon": 131.401 },
+    { "type": "node", "id": "2004", "lat": 34.394, "lon": 131.401 },
+    { "type": "node", "id": 2005, "lat": 91, "lon": 131.401 },
+    "文字列の要素",
+    null
+  ]
+}
