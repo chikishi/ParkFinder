@@ -61,7 +61,7 @@
 - [x] 5-3. `docs/product-requirements.md` のリスクへの対策を更新する
 - [x] 5-4. 最終確認として `npm run check`、`npm run build`、`npm run test:e2e` を実行する
 - [x] 5-5. 【ユーザー確認】コミットし、プルリクエストを作成する
-- [ ] 5-6. 【ユーザー確認】マージ後に GitHub Pages で検索し、駐車場が表示されることを確かめる
+- [x] 5-6. 【ユーザー確認】マージ後に GitHub Pages で検索し、駐車場が表示されることを確かめる
 
 **完了条件：** requirements.md 4 章の受け入れ条件をすべて満たしている。
 
@@ -86,3 +86,4 @@
 - 2026-11-26：4-8-4。ユーザーが GitHub リポジトリの Variables に VITE_OVERPASS_URL を登録した（gh variable list で名前だけを確認した）
 - 2026-11-26：4-4 はユーザーの判断で完了とした。5-5 でコミットし、プルリクエストを作成した
 - 2026-11-26：ユーザーの依頼で、Windows 用のネイティブモジュールを追加するスクリプトを `scripts/add-win32-bindings.sh` としてリポジトリに置いた。README に Windows での開発手順を、`docs/repository-structure.md` に `scripts/` を追記した。スクリプトは、展開済みのモジュールを飛ばす動きと、ダウンロードして展開する動きの両方を確かめ、展開後にビルドが成功した
+- 2026-11-26：GitHub の Variables の `VITE_OVERPASS_URL` を、NextGIS → maps.mail.ru → overpass-api.de の 3 件に設定し直した（当初は API キーだけが入っていた）。#2 のマージで始まったデプロイのあと、公開ページの CSP に 3 件のオリジンが含まれることを確かめた。ユーザーが公開ページで検索し、駐車場が表示された（5-6）。すべてのタスクが完了した
