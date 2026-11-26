@@ -7,6 +7,8 @@ export const MESSAGES = {
   searching: '駐車場を検索しています…',
   searchFailed: '駐車場情報を取得できませんでした',
   rateLimited: 'サーバーが混雑しています。少し待ってから再試行してください',
+  timedOut:
+    'サーバーから応答がありませんでした。混雑している可能性があります。少し待ってから再試行してください',
   noResults: 'この範囲に駐車場が見つかりませんでした',
   resultCount: (count: number) => `${count}件見つかりました`,
   retry: '再試行',
@@ -24,7 +26,14 @@ export const MESSAGES = {
 } as const;
 
 export function searchErrorMessage(kind: ProviderErrorKind | undefined): string {
-  return kind === 'rate-limit' ? MESSAGES.rateLimited : MESSAGES.searchFailed;
+  switch (kind) {
+    case 'rate-limit':
+      return MESSAGES.rateLimited;
+    case 'timeout':
+      return MESSAGES.timedOut;
+    default:
+      return MESSAGES.searchFailed;
+  }
 }
 
 export function geolocationErrorMessage(kind: GeolocationErrorKind): string {

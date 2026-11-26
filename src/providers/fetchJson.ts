@@ -1,5 +1,8 @@
 import { ProviderError } from '@/providers/types';
 
+/** 混雑を表す HTTP ステータス */
+const BUSY_STATUSES = new Set([429, 502, 503, 504]);
+
 type FetchJsonOptions = {
   init?: RequestInit;
   signal?: AbortSignal;
@@ -39,8 +42,8 @@ export async function fetchJson(url: string, options: FetchJsonOptions): Promise
       throw new ProviderError('network', '通信に失敗しました', { cause: error });
     }
 
-    // Overpass は混雑時に 429（リクエスト過多）や 504（処理待ちのタイムアウト）を返す
-    if (response.status === 429 || response.status === 504) {
+    // 混雑時は 429（リクエスト過多）、502・503（一時的な停止）、504（処理待ちのタイムアウト）が返る
+    if (BUSY_STATUSES.has(response.status)) {
       throw new ProviderError('rate-limit', `混雑により拒否されました（HTTP ${response.status}）`);
     }
     if (!response.ok) {
