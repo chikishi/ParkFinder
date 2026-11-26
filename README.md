@@ -53,6 +53,33 @@ npm run dev
 
 コードを変更したら、`npm run check` がすべて通ることを確認してください。
 
+### Windows で devcontainer の node_modules を使う場合
+
+devcontainer（Linux）で入れた `node_modules` を Windows でも使うときは、`npm ci` を実行せずに次の手順を使います。Windows で `npm ci` を実行すると、Linux 用のネイティブモジュールが削除され、devcontainer で動かなくなるためです。
+
+1. Node.js 20 以上を用意する（[Volta](https://volta.sh/) を使う場合は `volta run --node 24 <コマンド>` で、既定の Node を変えずに実行できる）
+2. Git Bash で、Windows 用のネイティブモジュールを追加する（Linux 用のモジュールは残る）
+   ```bash
+   volta run --node 24 bash scripts/add-win32-bindings.sh
+   ```
+3. `node_modules/.bin` のシンボリックリンクは Windows の Node から読めないため、npm スクリプトの代わりに各ツールを直接実行する
+   ```bash
+   volta run --node 24 node node_modules/eslint/bin/eslint.js .
+   volta run --node 24 node node_modules/typescript/bin/tsc -p tsconfig.json
+   volta run --node 24 node node_modules/typescript/bin/tsc -p tsconfig.node.json
+   volta run --node 24 node node_modules/vitest/vitest.mjs run
+   volta run --node 24 node node_modules/vite/bin/vite.js build
+   ```
+4. E2E テストは、先にプレビューサーバーを起動してから実行する（`playwright.config.ts` の自動起動は npm スクリプトを使うため、Windows では動かない）
+   ```bash
+   volta run --node 24 node node_modules/@playwright/test/cli.js install chromium   # 初回のみ
+   volta run --node 24 node node_modules/vite/bin/vite.js preview --port 4173 --strictPort &
+   volta run --node 24 node node_modules/@playwright/test/cli.js test
+   ```
+
+- Git Bash では、環境変数の値の `/` が Windows のパスに書き換えられることがある。`VITE_BASE_PATH=/` を指定してビルドするときは、`MSYS2_ENV_CONV_EXCL=VITE_BASE_PATH` もあわせて指定する
+- devcontainer と Windows のどちらかで `npm ci` / `npm install` を実行すると、もう一方の OS 用のモジュールは削除される。Windows 用は手順 2 を再実行すれば戻る。devcontainer 用は devcontainer で `npm ci` を実行すれば戻る
+
 ## 環境変数
 
 `.env` に記載します（`.env.example` を参照）。未設定または不正な値の場合は既定値が使われます。

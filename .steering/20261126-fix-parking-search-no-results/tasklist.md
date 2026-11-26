@@ -85,3 +85,4 @@
 - 2026-11-26：変更 D（4-8）。ユーザーが .env に NextGIS → maps.mail.ru → overpass-api.de の 3 件を設定した。ビルドした CSP に 3 件のオリジンが含まれ、Playwright の Chromium から萩駅周辺を検索すると、NextGIS から 4.3 秒で HTTP 200 が返り、2 件の駐車場が表示された
 - 2026-11-26：4-8-4。ユーザーが GitHub リポジトリの Variables に VITE_OVERPASS_URL を登録した（gh variable list で名前だけを確認した）
 - 2026-11-26：4-4 はユーザーの判断で完了とした。5-5 でコミットし、プルリクエストを作成した
+- 2026-11-26：ユーザーの依頼で、Windows 用のネイティブモジュールを追加するスクリプトを `scripts/add-win32-bindings.sh` としてリポジトリに置いた。README に Windows での開発手順を、`docs/repository-structure.md` に `scripts/` を追記した。スクリプトは、展開済みのモジュールを飛ばす動きと、ダウンロードして展開する動きの両方を確かめ、展開後にビルドが成功した
