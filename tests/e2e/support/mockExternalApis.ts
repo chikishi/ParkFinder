@@ -2,7 +2,10 @@ import { readFileSync } from 'node:fs';
 import type { Page, Request } from '@playwright/test';
 
 /** アプリの既定のエンドポイント（src/config.ts）。E2E テストでは実際には通信せず差し替える */
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+const OVERPASS_URLS = [
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+];
 const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search**';
 const TILE_URL = 'https://tile.openstreetmap.org/**';
 
@@ -38,26 +41,30 @@ export async function mockExternalApis(
   options: MockOptions = {},
 ): Promise<OverpassLog> {
   const log: OverpassLog = { queries: [] };
-  let overpassStatus = options.overpassStatus ?? 200;
+  const overpassStatus = options.overpassStatus ?? 200;
+  // 失敗させる場合は、最初の検索ですべての検索先を失敗させる（アプリは検索先を順に試すため）。
+  // その後は成功させ、再試行を確認できるようにする
+  let failuresLeft = overpassStatus !== 200 ? OVERPASS_URLS.length : 0;
 
   await page.route(/^https?:\/\/(?!localhost)/, (route) => route.abort());
   await page.route(TILE_URL, (route) =>
     route.fulfill({ status: 200, contentType: 'image/png', body: BLANK_PNG }),
   );
-  await page.route(OVERPASS_URL, (route) => {
-    log.queries.push(readOverpassQuery(route.request()));
-    if (overpassStatus !== 200) {
-      const status = overpassStatus;
-      // 2 回目以降は成功させ、再試行を確認できるようにする
-      overpassStatus = 200;
-      return route.fulfill({ status, body: '' });
-    }
-    return route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: options.overpassBody ?? readFixture('overpass-parking.json'),
+  for (const url of OVERPASS_URLS) {
+    await page.route(url, (route) => {
+      if (failuresLeft > 0) {
+        failuresLeft -= 1;
+        // 失敗した通信は記録しない。log.queries には、結果を返した検索だけが残る
+        return route.fulfill({ status: overpassStatus, body: '' });
+      }
+      log.queries.push(readOverpassQuery(route.request()));
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: options.overpassBody ?? readFixture('overpass-parking.json'),
+      });
     });
-  });
+  }
   await page.route(NOMINATIM_SEARCH_URL, (route) =>
     route.fulfill({
       status: 200,

@@ -7,7 +7,7 @@ import type { GeocodingProvider, ParkingProvider } from '@/providers/types';
 // 提供元を選ぶ処理はこのファイルにまとめる。Google 対応時は config.provider で分岐する
 
 export function createParkingProvider(config: AppConfig): ParkingProvider {
-  return new OverpassParkingProvider(config.overpassUrl);
+  return new OverpassParkingProvider(config.overpassUrls);
 }
 
 export function createGeocodingProvider(config: AppConfig): GeocodingProvider {

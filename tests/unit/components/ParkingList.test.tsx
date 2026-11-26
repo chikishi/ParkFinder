@@ -95,7 +95,7 @@ describe('ParkingList', () => {
   });
 
   it('失敗時はエラーと再試行ボタンが表示され、押すと onRetry が呼ばれる', async () => {
-    const props = renderList({ status: 'error', results: [], errorKind: 'timeout' });
+    const props = renderList({ status: 'error', results: [], errorKind: 'network' });
 
     expect(screen.getByRole('alert')).toHaveTextContent('駐車場情報を取得できませんでした');
     await userEvent.click(screen.getByRole('button', { name: '再試行' }));
@@ -107,6 +107,12 @@ describe('ParkingList', () => {
     renderList({ status: 'error', results: [], errorKind: 'rate-limit' });
 
     expect(screen.getByRole('alert')).toHaveTextContent('サーバーが混雑しています');
+  });
+
+  it('タイムアウトによる失敗の場合は、応答が無かった旨が表示される', () => {
+    renderList({ status: 'error', results: [], errorKind: 'timeout' });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('サーバーから応答がありませんでした');
   });
 
   it('0 件の場合は、範囲を広げるボタンで次に大きい半径が選ばれる', async () => {

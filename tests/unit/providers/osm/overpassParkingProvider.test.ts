@@ -2,6 +2,8 @@ import { http, HttpResponse, delay } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   OverpassParkingProvider,
+  QUERY_TIMEOUT_S,
+  TIMEOUT_MS,
   buildOverpassQuery,
 } from '@/providers/osm/overpassParkingProvider';
 import { ProviderError } from '@/providers/types';
@@ -11,6 +13,8 @@ import { TEST_OVERPASS_URL, overpassHandler } from '../../../mocks/handlers';
 import { server } from '../../../mocks/server';
 
 const CENTER = { lat: 34.393885, lng: 131.401059 };
+/** 切り替え先の検索先（テスト用の架空のエンドポイント） */
+const SECOND_OVERPASS_URL = 'https://overpass-second.test/api/interpreter';
 
 async function catchError(promise: Promise<unknown>): Promise<unknown> {
   try {
@@ -25,11 +29,16 @@ describe('buildOverpassQuery', () => {
   it('node・way・relation の駐車場を半径と中心で検索するクエリになる', () => {
     const query = buildOverpassQuery(CENTER, 500);
 
-    expect(query).toContain('[out:json]');
+    expect(query).toContain('[out:json][timeout:10];');
     expect(query).toContain('node["amenity"="parking"](around:500,34.393885,131.401059);');
     expect(query).toContain('way["amenity"="parking"](around:500,34.393885,131.401059);');
     expect(query).toContain('relation["amenity"="parking"](around:500,34.393885,131.401059);');
     expect(query).toContain('out center tags;');
+  });
+
+  it('アプリのタイムアウトは、サーバーに許す処理時間の上限より長い', () => {
+    // 逆になると、混雑時にサーバーが返そうとした結果をアプリが先に打ち切ってしまう
+    expect(TIMEOUT_MS).toBeGreaterThan(QUERY_TIMEOUT_S * 1000);
   });
 
   it('半径は整数に丸められる', () => {
@@ -45,7 +54,7 @@ describe('buildOverpassQuery', () => {
 });
 
 describe('OverpassParkingProvider', () => {
-  const provider = new OverpassParkingProvider(TEST_OVERPASS_URL);
+  const provider = new OverpassParkingProvider([TEST_OVERPASS_URL]);
 
   afterEach(() => {
     vi.useRealTimers();
@@ -80,7 +89,7 @@ describe('OverpassParkingProvider', () => {
     expect(parkingLots).toHaveLength(1);
   });
 
-  it.each([429, 504])('HTTP %i の場合は rate-limit のエラーになる', async (status) => {
+  it.each([429, 502, 503, 504])('HTTP %i の場合は rate-limit のエラーになる', async (status) => {
     server.use(overpassHandler(null, { status }));
 
     const error = await catchError(provider.searchNearby(CENTER, 500));
@@ -89,8 +98,8 @@ describe('OverpassParkingProvider', () => {
     expect(error).toMatchObject({ kind: 'rate-limit' });
   });
 
-  it('その他の HTTP エラーは network のエラーになる', async () => {
-    server.use(overpassHandler(null, { status: 500 }));
+  it.each([406, 500])('HTTP %i は network のエラーになる', async (status) => {
+    server.use(overpassHandler(null, { status }));
 
     const error = await catchError(provider.searchNearby(CENTER, 500));
 
@@ -145,7 +154,7 @@ describe('OverpassParkingProvider', () => {
     expect(error).toMatchObject({ kind: 'aborted' });
   });
 
-  it('15 秒以内に応答が無い場合は timeout のエラーになる', async () => {
+  it('アプリのタイムアウトまでに応答が無い場合は timeout のエラーになる', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     server.use(
       http.post(TEST_OVERPASS_URL, async () => {
@@ -155,8 +164,135 @@ describe('OverpassParkingProvider', () => {
     );
 
     const promise = catchError(provider.searchNearby(CENTER, 500));
-    await vi.advanceTimersByTimeAsync(15_000);
+    await vi.advanceTimersByTimeAsync(TIMEOUT_MS);
 
     expect(await promise).toMatchObject({ kind: 'timeout' });
+  });
+});
+
+describe('OverpassParkingProvider（複数の検索先）', () => {
+  const provider = new OverpassParkingProvider([TEST_OVERPASS_URL, SECOND_OVERPASS_URL]);
+
+  /** 2 か所目の検索先を空の結果で応答させ、呼ばれた回数を数える */
+  function useSecondEndpoint(): { calls: () => number } {
+    let calls = 0;
+    server.use(
+      http.post(SECOND_OVERPASS_URL, () => {
+        calls += 1;
+        return HttpResponse.json(overpassEmpty);
+      }),
+    );
+    return { calls: () => calls };
+  }
+
+  /** 1 か所目の検索先が応答を返さないようにする */
+  function useHangingFirstEndpoint(): void {
+    server.use(
+      http.post(TEST_OVERPASS_URL, async () => {
+        await delay('infinite');
+        return HttpResponse.json(overpassEmpty);
+      }),
+    );
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('検索先が空の場合は例外になる', () => {
+    expect(() => new OverpassParkingProvider([])).toThrow(RangeError);
+  });
+
+  it('1 か所目が成功した場合は 2 か所目を呼ばない', async () => {
+    const second = useSecondEndpoint();
+
+    const parkingLots = await provider.searchNearby(CENTER, 500);
+
+    expect(parkingLots).toHaveLength(5);
+    expect(second.calls()).toBe(0);
+  });
+
+  it.each([504, 502, 406])('1 か所目が HTTP %i の場合は 2 か所目の結果を返す', async (status) => {
+    server.use(overpassHandler(null, { status }));
+    const second = useSecondEndpoint();
+
+    const parkingLots = await provider.searchNearby(CENTER, 500);
+
+    expect(parkingLots).toEqual([]);
+    expect(second.calls()).toBe(1);
+  });
+
+  it('1 か所目の通信自体が失敗した場合は 2 か所目の結果を返す', async () => {
+    server.use(http.post(TEST_OVERPASS_URL, () => HttpResponse.error()));
+    const second = useSecondEndpoint();
+
+    const parkingLots = await provider.searchNearby(CENTER, 500);
+
+    expect(parkingLots).toEqual([]);
+    expect(second.calls()).toBe(1);
+  });
+
+  it('1 か所目の応答の形式が不正な場合は 2 か所目を試さない', async () => {
+    server.use(overpassHandler({ remark: 'runtime error' }));
+    const second = useSecondEndpoint();
+
+    const error = await catchError(provider.searchNearby(CENTER, 500));
+
+    expect(error).toMatchObject({ kind: 'invalid-response' });
+    expect(second.calls()).toBe(0);
+  });
+
+  it('1 か所目がタイムアウトした場合は 2 か所目の結果を返す', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    useHangingFirstEndpoint();
+    const second = useSecondEndpoint();
+
+    const promise = provider.searchNearby(CENTER, 500);
+    await vi.advanceTimersByTimeAsync(TIMEOUT_MS);
+
+    expect(await promise).toEqual([]);
+    expect(second.calls()).toBe(1);
+  });
+
+  it('すべての検索先がタイムアウトした場合は timeout のエラーになる', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    server.use(
+      http.post(TEST_OVERPASS_URL, async () => {
+        await delay('infinite');
+        return HttpResponse.json(overpassEmpty);
+      }),
+      http.post(SECOND_OVERPASS_URL, async () => {
+        await delay('infinite');
+        return HttpResponse.json(overpassEmpty);
+      }),
+    );
+
+    const promise = catchError(provider.searchNearby(CENTER, 500));
+    await vi.advanceTimersByTimeAsync(TIMEOUT_MS * 2);
+
+    expect(await promise).toMatchObject({ kind: 'timeout' });
+  });
+
+  it('中断された場合は残りの検索先を試さない', async () => {
+    useHangingFirstEndpoint();
+    const second = useSecondEndpoint();
+    const controller = new AbortController();
+
+    const promise = catchError(provider.searchNearby(CENTER, 500, controller.signal));
+    controller.abort();
+
+    expect(await promise).toMatchObject({ kind: 'aborted' });
+    expect(second.calls()).toBe(0);
+  });
+
+  it('すべての検索先が失敗した場合は最後のエラーを投げる', async () => {
+    server.use(
+      overpassHandler(null, { status: 504 }),
+      http.post(SECOND_OVERPASS_URL, () => new HttpResponse(null, { status: 500 })),
+    );
+
+    const error = await catchError(provider.searchNearby(CENTER, 500));
+
+    expect(error).toMatchObject({ kind: 'network' });
   });
 });

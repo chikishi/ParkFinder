@@ -5,7 +5,11 @@ import { loadEnv, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
 
-const DEFAULT_OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+/** src/config.ts の既定の検索先と合わせる */
+const DEFAULT_OVERPASS_URLS = [
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+];
 const DEFAULT_NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 
 function toOrigin(url: string | undefined, fallback: string): string {
@@ -22,9 +26,19 @@ function toOrigin(url: string | undefined, fallback: string): string {
  * GitHub Pages ではレスポンスヘッダーを設定できないため、meta タグで指定する。
  */
 function contentSecurityPolicy(env: Record<string, string>): Plugin {
+  // VITE_OVERPASS_URL はカンマ区切りで複数指定できる。切り替え先も含め、すべての検索先を許可する。
+  // 有効な URL が 1 件も無いときは、アプリ（src/config.ts）と同じく既定の検索先を使う
+  const configuredOrigins = (env.VITE_OVERPASS_URL ?? '')
+    .split(',')
+    .map((url) => url.trim())
+    .filter((url) => URL.canParse(url))
+    .map((url) => new URL(url).origin);
+  const overpassOrigins =
+    configuredOrigins.length > 0
+      ? configuredOrigins
+      : DEFAULT_OVERPASS_URLS.map((url) => new URL(url).origin);
   const connectOrigins = [
-    toOrigin(env.VITE_OVERPASS_URL, DEFAULT_OVERPASS_URL),
-    toOrigin(env.VITE_NOMINATIM_URL, DEFAULT_NOMINATIM_URL),
+    ...new Set([...overpassOrigins, toOrigin(env.VITE_NOMINATIM_URL, DEFAULT_NOMINATIM_URL)]),
   ];
   const policy = [
     "default-src 'self'",

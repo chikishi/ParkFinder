@@ -57,14 +57,25 @@ npm run dev
 
 `.env` に記載します（`.env.example` を参照）。未設定または不正な値の場合は既定値が使われます。
 
-| 変数                  | 既定値                                    | 内容                                                                          |
-| --------------------- | ----------------------------------------- | ----------------------------------------------------------------------------- |
-| `VITE_PROVIDER`       | `osm`                                     | 地図・駐車場データの提供元（現在は `osm` のみ）                               |
-| `VITE_OVERPASS_URL`   | `https://overpass-api.de/api/interpreter` | Overpass API のエンドポイント。混雑時は別の公開インスタンスに変更する         |
-| `VITE_NOMINATIM_URL`  | `https://nominatim.openstreetmap.org`     | 地名検索（Nominatim）のエンドポイント                                         |
-| `VITE_DEFAULT_CENTER` | `34.393885,131.401059`（萩駅）            | 初回起動時の地図の中心（緯度,経度）                                           |
-| `VITE_DEFAULT_ZOOM`   | `15`                                      | 初回起動時のズーム（1〜19）                                                   |
-| `VITE_BASE_PATH`      | `/`                                       | 公開 URL のパス。GitHub Pages では `/{リポジトリ名}/`（デプロイ時に自動設定） |
+| 変数                  | 既定値                                                                                            | 内容                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `VITE_PROVIDER`       | `osm`                                                                                             | 地図・駐車場データの提供元（現在は `osm` のみ）                                                    |
+| `VITE_OVERPASS_URL`   | `https://maps.mail.ru/osm/tools/overpass/api/interpreter,https://overpass-api.de/api/interpreter` | Overpass API のエンドポイント。カンマ区切りで最大 3 件まで指定でき、失敗時は先頭から順に切り替える |
+| `VITE_NOMINATIM_URL`  | `https://nominatim.openstreetmap.org`                                                             | 地名検索（Nominatim）のエンドポイント                                                              |
+| `VITE_DEFAULT_CENTER` | `34.393885,131.401059`（萩駅）                                                                    | 初回起動時の地図の中心（緯度,経度）                                                                |
+| `VITE_DEFAULT_ZOOM`   | `15`                                                                                              | 初回起動時のズーム（1〜19）                                                                        |
+| `VITE_BASE_PATH`      | `/`                                                                                               | 公開 URL のパス。GitHub Pages では `/{リポジトリ名}/`（デプロイ時に自動設定）                      |
+
+### NextGIS の Overpass API を使う場合
+
+[NextGIS](https://nextgis.com/) の Overpass API は無料ですが、API キーが必要です。アカウントの「Software and services」→「Overpass API」→「Create API key」でキーを発行し、`VITE_OVERPASS_URL` の先頭に加えます。
+
+```
+VITE_OVERPASS_URL=https://overpass.nextgis.com/<APIキー>/api/interpreter,https://maps.mail.ru/osm/tools/overpass/api/interpreter,https://overpass-api.de/api/interpreter
+```
+
+- キーはリポジトリに書かず、ローカルでは `.env`、GitHub Pages ではリポジトリの Variables の `VITE_OVERPASS_URL` に設定します
+- 静的サイトのため、キーはビルドしたファイルに含まれ、利用者から見えます
 
 ## GitHub Pages での公開
 
